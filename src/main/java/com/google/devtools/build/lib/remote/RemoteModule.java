@@ -573,7 +573,7 @@ public final class RemoteModule extends BlazeModule {
                 retryScheduler,
                 Retrier.ALLOW_ALL_CALLS);
         remoteExecutor =
-            new GrpcRemoteExecutor(execChannel.retain(), callCredentialsProvider, execRetrier);
+            new GrpcRemoteExecutor(execChannel.retain(), callCredentialsProvider, execRetrier, remoteOptions);
       }
       execChannel.release();
       RemoteExecutionCache remoteCache =

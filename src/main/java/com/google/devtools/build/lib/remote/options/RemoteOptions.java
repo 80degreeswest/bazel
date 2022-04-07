@@ -205,6 +205,19 @@ public final class RemoteOptions extends OptionsBase {
   public Duration remoteTimeout;
 
   @Option(
+      name = "experimental_remote_execute_timeout",
+      defaultValue = "null",
+      documentationCategory = OptionDocumentationCategory.REMOTE,
+      effectTags = {OptionEffectTag.UNKNOWN},
+      converter = RemoteTimeoutConverter.class,
+      help =
+          "The maximum amount of time to wait for remote execution's execute response"
+              + " Following units can be"
+              + " used: Days (d), hours (h), minutes (m), seconds (s), and milliseconds (ms). If"
+              + " the unit is omitted, the value is interpreted as seconds.")
+  public Duration remoteExecuteTimeout;
+
+  @Option(
       name = "remote_bytestream_uri_prefix",
       defaultValue = "null",
       documentationCategory = OptionDocumentationCategory.REMOTE,

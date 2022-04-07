@@ -23,6 +23,7 @@ import build.bazel.remote.execution.v2.WaitExecutionRequest;
 import com.google.common.base.Preconditions;
 import com.google.devtools.build.lib.authandtls.CallCredentialsProvider;
 import com.google.devtools.build.lib.concurrent.ThreadSafety.ThreadSafe;
+import com.google.devtools.build.lib.remote.options.RemoteOptions;
 import com.google.devtools.build.lib.remote.common.OperationObserver;
 import com.google.devtools.build.lib.remote.common.RemoteActionExecutionContext;
 import com.google.devtools.build.lib.remote.common.RemoteExecutionClient;
@@ -37,6 +38,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 /** A remote work executor that uses gRPC for communicating the work, inputs and outputs. */
@@ -48,20 +50,27 @@ class GrpcRemoteExecutor implements RemoteExecutionClient {
   private final RemoteRetrier retrier;
 
   private final AtomicBoolean closed = new AtomicBoolean();
+  private final RemoteOptions options;
 
   public GrpcRemoteExecutor(
       ReferenceCountedChannel channel,
       CallCredentialsProvider callCredentialsProvider,
-      RemoteRetrier retrier) {
+      RemoteRetrier retrier,
+      RemoteOptions options) {
     this.channel = channel;
     this.callCredentialsProvider = callCredentialsProvider;
     this.retrier = retrier;
+    this.options = options;
   }
 
   private ExecutionBlockingStub execBlockingStub(RequestMetadata metadata, Channel channel) {
-    return ExecutionGrpc.newBlockingStub(channel)
+    ExecutionBlockingStub stub = ExecutionGrpc.newBlockingStub(channel)
         .withInterceptors(TracingMetadataUtils.attachMetadataInterceptor(metadata))
         .withCallCredentials(callCredentialsProvider.getCallCredentials());
+    if (options.remoteExecuteTimeout != null) {
+      stub = stub.withDeadlineAfter(options.remoteExecuteTimeout.getSeconds(), TimeUnit.SECONDS);
+    }
+    return stub;
   }
 
   private void handleStatus(Status statusProto, @Nullable ExecuteResponse resp) {
